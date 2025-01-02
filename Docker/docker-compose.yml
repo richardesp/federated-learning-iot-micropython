@@ -1,0 +1,28 @@
+services:
+  mqtt_broker:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  server:
+    build:
+      context: ../server
+    container_name: server
+    depends_on:
+      - mqtt_broker
+    environment:
+      - BROKER=mosquitto
+
+  iot_node_1:
+    build:
+      context: ../iot_nodes
+    container_name: iot_node_1
+    depends_on:
+      - mqtt_broker
+    environment:
+      - BROKER=mosquitto
+      - CLIENT_ID=iot_node_1
