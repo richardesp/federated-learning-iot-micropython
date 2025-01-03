@@ -15,14 +15,14 @@ services:
     depends_on:
       - mqtt_broker
     environment:
-      - BROKER=mosquitto
+      - ROLE=server               # Specifies the role as "server"
+      - BROKER=mosquitto          # Name of the MQTT broker
 
-  iot_node_1:
+  iot_node:
     build:
       context: ../iot_nodes
-    container_name: iot_node_1
     depends_on:
       - mqtt_broker
     environment:
-      - BROKER=mosquitto
-      - CLIENT_ID=iot_node_1
+      - ROLE=node                 # Specifies the role as "node"
+      - BROKER=mosquitto          # Name of the MQTT broker
