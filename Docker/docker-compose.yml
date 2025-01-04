@@ -23,6 +23,7 @@ services:
       context: ../iot_nodes
     depends_on:
       - mqtt_broker
+    platform: linux/amd64
     environment:
       - ROLE=node                 # Specifies the role as "node"
       - BROKER=mosquitto          # Name of the MQTT broker

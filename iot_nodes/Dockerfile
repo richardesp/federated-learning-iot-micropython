@@ -1,13 +1,22 @@
-FROM espressif/idf:release-v5.0
+# Usar una imagen base con soporte para QEMU y ESP32
+FROM mluis/qemu-esp32:latest
 
-RUN apt-get update && apt-get install -y python3 python3-venv
+# Establecer el directorio de trabajo dentro del contenedor
+WORKDIR /project
 
-RUN python3 -m venv /venv
+# Montar el directorio local como volumen (esto se configura al ejecutar el contenedor)
+COPY . /project
 
-RUN /venv/bin/pip install --no-cache-dir paho-mqtt
+# Instalar herramientas adicionales si es necesario
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Exponer el puerto en caso de que sea necesario (por ejemplo, para depuración)
+EXPOSE 3333
 
-COPY iot_node.py /app/iot_node.py
-
-CMD ["/venv/bin/python", "/app/iot_node.py"]
+# Comando predeterminado para iniciar una shell interactiva
+CMD ["tail", "-f", "/dev/null"]
