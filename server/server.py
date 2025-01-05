@@ -1,40 +1,53 @@
 import os
+import json
+import paho.mqtt.client as mqtt
 import logging
-from paho.mqtt.client import Client
 
-# Logging configuration
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger()
+# Configuración de logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("Server")
 
-# MQTT Broker configuration
-BROKER = os.getenv("BROKER", "mosquitto")  # Container name for the broker
-PORT = 1883
-TOPIC = "iot/sensor_data"
+# Configuración MQTT
+BROKER = os.getenv("BROKER", "localhost")
+TOPIC_RECEIVE = "fl/+/params"
+TOPIC_SEND = "fl/global_model"
 
-# Callback function for received messages
-def on_message(client, userdata, msg):
-    payload = msg.payload.decode()
-    logger.info(f"Message received on topic {msg.topic}: {payload}")
+# Almacén para los parámetros locales
+local_params = []
 
-# MQTT client configuration
-client = Client()
+# Callback para recibir parámetros locales
+def on_message(client, userdata, message):
+    global local_params
+    try:
+        payload = json.loads(message.payload.decode())
+        logger.info(f"Parámetros recibidos: {payload}")
+        local_params.append(payload["params"])
+    except Exception as e:
+        logger.error(f"Error al procesar mensaje: {e}")
+
+# Agregación de parámetros locales
+def aggregate():
+    global local_params
+    if local_params:
+        try:
+            global_model = sum(local_params) / len(local_params)  # Promedio simple
+            logger.info(f"Modelo global actualizado: {global_model}")
+            client.publish(TOPIC_SEND, json.dumps(global_model))
+            local_params.clear()
+        except Exception as e:
+            logger.error(f"Error durante la agregación: {e}")
+
+# Configuración del cliente MQTT
+client = mqtt.Client("server")
 client.on_message = on_message
+client.connect(BROKER, 1883, 60)
+client.loop_start()
+client.subscribe(TOPIC_RECEIVE)
 
 try:
-    # Connect to the MQTT broker
-    logger.info(f"Connecting to MQTT broker at {BROKER}:{PORT}...")
-    client.connect(BROKER, PORT, 60)
-
-    # Subscribe to the topic
-    client.subscribe(TOPIC)
-    logger.info(f"Subscribed to topic {TOPIC}. Waiting for messages...")
-
-    # Keep the client running
-    client.loop_forever()
-
+    while True:
+        aggregate()
 except KeyboardInterrupt:
-    logger.info("Shutting down...")
+    logger.info("Servidor detenido por el usuario.")
+    client.loop_stop()
     client.disconnect()
-
-except Exception as e:
-    logger.error(f"An error occurred: {e}")

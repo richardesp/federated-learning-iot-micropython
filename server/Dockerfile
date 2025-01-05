@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y python3 python3-venv
 
 RUN python3 -m venv /venv
 
-RUN /venv/bin/pip install --no-cache-dir paho-mqtt
+RUN /venv/bin/pip install --no-cache-dir paho-mqtt==1.6.1
 
 WORKDIR /app
 
